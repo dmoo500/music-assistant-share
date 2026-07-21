@@ -239,10 +239,23 @@
         if (resp.ok) {
           const item = await resp.json();
           if (customUrl) localStorage.setItem(STORAGE_KEY, base);
+          // Build the MA frontend route from the item URI
+          // URI format: <provider>://<media_type>/<item_id>
+          // Route format: /#/<media_type>s/<provider>/<item_id>
           const uri = item?.uri;
-          window.location.href = uri
-            ? `${base}/#/item/${encodeURIComponent(uri)}`
-            : `${base}/`;
+          let target = `${base}/`;
+          if (uri) {
+            try {
+              const u = new URL(uri);
+              const provider = u.protocol.replace(":", "");
+              const mediaType = u.hostname;  // e.g. "track", "artist"
+              const itemId = u.pathname.replace(/^\//, "");
+              target = `${base}/#/${mediaType}s/${provider}/${itemId}`;
+            } catch (_) {
+              target = `${base}/`;
+            }
+          }
+          window.location.href = target;
           return;
         }
       } catch (_) {
