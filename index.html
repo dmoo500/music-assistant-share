@@ -245,14 +245,10 @@
           const uri = item?.uri;
           let target = `${base}/`;
           if (uri) {
-            try {
-              const u = new URL(uri);
-              const provider = u.protocol.replace(":", "");
-              const mediaType = u.hostname;  // e.g. "track", "artist"
-              const itemId = u.pathname.replace(/^\//, "");
+            const m = uri.match(/^([^:]+):\/\/([^/]+)\/(.+)$/);
+            if (m) {
+              const [, provider, mediaType, itemId] = m;
               target = `${base}/#/${mediaType}s/${provider}/${itemId}`;
-            } catch (_) {
-              target = `${base}/`;
             }
           }
           window.location.href = target;
