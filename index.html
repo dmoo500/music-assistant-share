@@ -108,12 +108,12 @@
     }
 
     .error {
-      background: #3b1111;
-      border: 1px solid #7a2020;
+      background: rgba(207, 102, 121, 0.12);
+      border: 1px solid rgba(207, 102, 121, 0.4);
       border-radius: 8px;
       padding: .75rem 1rem;
       font-size: .85rem;
-      color: #f48;
+      color: #cf6679;
       margin-top: 1rem;
       display: none;
     }
@@ -213,6 +213,8 @@
     }
   });
 
+  const HTTP_PATH = "/api/share/resolve";
+
   // --- open button ---
   document.getElementById("btn-open").addEventListener("click", async () => {
     const encoded = location.hash.slice(1);
@@ -220,7 +222,7 @@
 
     const customUrl = (document.getElementById("ma-url").value || "").trim().replace(/\/$/, "");
     const candidates = customUrl
-      ? [customUrl, ...COMMON_URLS]
+      ? [customUrl, ...COMMON_URLS.filter(u => u !== customUrl)]
       : COMMON_URLS;
 
     hideError();
@@ -228,20 +230,20 @@
 
     for (const base of candidates) {
       try {
-        // ping the MA API to check reachability
-        const resp = await fetch(`${base}/api/share/resolve`, {
+        const resp = await fetch(`${base}${HTTP_PATH}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ encoded }),
-          signal: AbortSignal.timeout(3000),
+          signal: AbortSignal.timeout(5000),
         });
         if (resp.ok) {
           const item = await resp.json();
-          if (item && item.uri) {
-            // navigate to the MA web UI and deep-link to the item
-            window.location.href = `${base}/#/item/${encodeURIComponent(item.uri)}`;
-            return;
-          }
+          if (customUrl) localStorage.setItem(STORAGE_KEY, base);
+          const uri = item?.uri;
+          window.location.href = uri
+            ? `${base}/#/item/${encodeURIComponent(uri)}`
+            : `${base}/`;
+          return;
         }
       } catch (_) {
         // try next candidate
