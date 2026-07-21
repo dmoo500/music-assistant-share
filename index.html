@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Music Assistant – Open in your instance</title>
+  <meta name="description" content="Open this shared track, artist or playlist in your own Music Assistant instance." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .card {
+      background: #1e1e1e;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: 1.5rem;
+      font-size: .85rem;
+      color: #888;
+    }
+    .logo svg { width: 24px; height: 24px; }
+
+    .preview {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .art {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #333;
+      flex-shrink: 0;
+    }
+    .art-placeholder {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      background: #333;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+    .meta h1 { font-size: 1.1rem; font-weight: 600; margin-bottom: .25rem; }
+    .meta p  { font-size: .9rem; color: #aaa; }
+
+    .url-row {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+    .url-row input {
+      flex: 1;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: .9rem;
+      padding: .6rem .75rem;
+      outline: none;
+    }
+    .url-row input:focus { border-color: #03a9f4; }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .95rem;
+      font-weight: 600;
+      padding: .75rem 1.25rem;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .85; }
+
+    #btn-open {
+      width: 100%;
+      background: #03a9f4;
+      color: #000;
+      margin-bottom: .75rem;
+    }
+    #btn-save {
+      background: #333;
+      color: #e0e0e0;
+      padding: .6rem .9rem;
+      font-size: .85rem;
+    }
+
+    .error {
+      background: #3b1111;
+      border: 1px solid #7a2020;
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .85rem;
+      color: #f48;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .hint { font-size: .78rem; color: #666; margin-top: .5rem; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <!-- MA icon placeholder -->
+    <svg viewBox="0 0 24 24" fill="#03a9f4"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+    Music Assistant
+  </div>
+
+  <div class="preview" id="preview">
+    <div class="art-placeholder" id="art-placeholder">🎵</div>
+    <div class="meta">
+      <h1 id="title">Loading…</h1>
+      <p id="subtitle"></p>
+    </div>
+  </div>
+
+  <div class="url-row">
+    <input type="url" id="ma-url" placeholder="http://homeassistant.local:8095" />
+    <button id="btn-save" title="Save MA URL">💾</button>
+  </div>
+
+  <button id="btn-open">Open in Music Assistant</button>
+
+  <p class="hint">Enter the address of your Music Assistant instance above.<br>
+  It is saved in your browser for next time.</p>
+
+  <div class="error" id="error"></div>
+</div>
+
+<script>
+  const STORAGE_KEY = "ma_instance_url";
+  const COMMON_URLS = [
+    "http://homeassistant.local:8095",
+    "http://localhost:8095",
+    "http://musicassistant.local:8095",
+  ];
+
+  // --- decode payload from URL fragment ---
+  let payload = null;
+  try {
+    const raw = location.hash.slice(1);
+    if (raw) {
+      // URL-safe base64 → standard base64 → JSON
+      const b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
+      payload = JSON.parse(atob(b64));
+    }
+  } catch (e) {
+    showError("Could not decode share link. It may be corrupted.");
+  }
+
+  // --- populate preview card ---
+  if (payload) {
+    document.title = payload.title
+      ? `${payload.title} – Music Assistant`
+      : "Music Assistant – Open in your instance";
+
+    document.getElementById("title").textContent = payload.title || "Unknown";
+
+    const parts = [];
+    if (payload.artist) parts.push(payload.artist);
+    if (payload.album)  parts.push(payload.album);
+    document.getElementById("subtitle").textContent = parts.join(" · ");
+
+    if (payload.art) {
+      const img = document.createElement("img");
+      img.className = "art";
+      img.src = payload.art;
+      img.alt = payload.title || "";
+      img.onerror = () => img.replaceWith(document.getElementById("art-placeholder"));
+      document.getElementById("art-placeholder").replaceWith(img);
+    } else {
+      // pick emoji by type
+      const emojis = { track: "🎵", artist: "🎤", album: "💿", playlist: "📋" };
+      document.getElementById("art-placeholder").textContent =
+        emojis[payload.type] || "🎵";
+    }
+  }
+
+  // --- restore saved MA URL ---
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) document.getElementById("ma-url").value = saved;
+
+  // --- save button ---
+  document.getElementById("btn-save").addEventListener("click", () => {
+    const url = (document.getElementById("ma-url").value || "").trim().replace(/\/$/, "");
+    if (url) {
+      localStorage.setItem(STORAGE_KEY, url);
+      document.getElementById("btn-save").textContent = "✓";
+      setTimeout(() => (document.getElementById("btn-save").textContent = "💾"), 1500);
+    }
+  });
+
+  // --- open button ---
+  document.getElementById("btn-open").addEventListener("click", async () => {
+    const encoded = location.hash.slice(1);
+    if (!encoded) { showError("No share payload found in URL."); return; }
+
+    const customUrl = (document.getElementById("ma-url").value || "").trim().replace(/\/$/, "");
+    const candidates = customUrl
+      ? [customUrl, ...COMMON_URLS]
+      : COMMON_URLS;
+
+    hideError();
+    document.getElementById("btn-open").textContent = "Connecting…";
+
+    for (const base of candidates) {
+      try {
+        // ping the MA API to check reachability
+        const resp = await fetch(`${base}/api/share/resolve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ encoded }),
+          signal: AbortSignal.timeout(3000),
+        });
+        if (resp.ok) {
+          const item = await resp.json();
+          if (item && item.uri) {
+            // navigate to the MA web UI and deep-link to the item
+            window.location.href = `${base}/#/item/${encodeURIComponent(item.uri)}`;
+            return;
+          }
+        }
+      } catch (_) {
+        // try next candidate
+      }
+    }
+
+    document.getElementById("btn-open").textContent = "Open in Music Assistant";
+    showError(
+      "Could not reach a Music Assistant instance. " +
+      "Please enter your MA URL above and try again."
+    );
+  });
+
+  function showError(msg) {
+    const el = document.getElementById("error");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+  function hideError() {
+    document.getElementById("error").style.display = "none";
+  }
+</script>
+</body>
+</html>
