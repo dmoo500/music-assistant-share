@@ -119,6 +119,47 @@
     }
 
     .hint { font-size: .78rem; color: #666; margin-top: .5rem; }
+
+    .provider-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-bottom: .75rem;
+    }
+    .provider-btn {
+      background: #2a2a2a;
+      color: #e0e0e0;
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-size: .8rem;
+      font-weight: 500;
+      padding: .5rem .9rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      transition: background .15s;
+    }
+    .provider-btn:hover { background: #333; }
+
+    .tracklist {
+      margin-bottom: 1rem;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #333;
+      border-radius: 8px;
+    }
+    .tracklist-item {
+      padding: .45rem .75rem;
+      font-size: .82rem;
+      border-bottom: 1px solid #2a2a2a;
+      display: flex;
+      gap: .5rem;
+    }
+    .tracklist-item:last-child { border-bottom: none; }
+    .tracklist-item .t-num { color: #555; min-width: 1.5rem; text-align: right; }
+    .tracklist-item .t-title { flex: 1; }
+    .tracklist-item .t-artist { color: #888; }
   </style>
 </head>
 <body>
@@ -128,6 +169,7 @@
         <path d="m 109.394,4.3814 c 5.848,-5.84187 15.394,-5.84187 21.212,0 l 98.788,98.8876 c 5.848,5.842 10.606,17.374 10.606,25.638 v 90.11 l -0.005,0.356 c -0.206,8.086 -6.881,14.628 -14.995,14.628 H 15 C 6.75759,234.001 2.40473e-5,227.22 0,218.987 v -90.11 c 1.20331e-4,-8.264 4.78834,-19.796 10.6064,-25.638 z" fill="#f2f4f9"/>
         <path d="m 109.394,4.3814 c 5.848,-5.84187 15.394,-5.84187 21.212,0 l 98.788,98.8876 c 5.848,5.842 10.606,17.374 10.606,25.638 v 90.11 l -0.005,0.356 c -0.206,8.086 -6.881,14.628 -14.995,14.628 H 15 C 6.75759,234.001 2.40473e-5,227.22 0,218.987 v -90.11 c 1.20331e-4,-8.264 4.78834,-19.796 10.6064,-25.638 z M 36,120.001 c -4.4183,0 -8,3.581 -8,8 v 78 h 16 v -78 c 0,-4.419 -3.5817,-8 -8,-8 z m 32,0 c -4.4183,0 -8,3.581 -8,8 v 78 h 16 v -78 c 0,-4.419 -3.5817,-8 -8,-8 z m 32,0 c -4.4183,0 -8,3.581 -8,8 v 78 h 16 v -78 c 0,-4.419 -3.582,-8 -8,-8 z m 58.393,0.426 c -4.193,-1.395 -8.722,0.873 -10.118,5.065 l -26.796,80.509 h 16.863 l 25.114,-75.457 c 1.395,-4.192 -0.872,-8.721 -5.063,-10.117 z m 30.315,5.065 c -1.395,-4.192 -5.925,-6.46 -10.117,-5.065 -4.192,1.396 -6.46,5.925 -5.065,10.117 l 25.116,75.457 h 16.862 z" fill="#18bcf2"/>
       </svg>
+      <a href="https://music-assistant.io" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">Music Assistant</a>
   </div>
 
   <div class="preview" id="preview">
@@ -142,6 +184,10 @@
     <input type="url" id="ma-url" placeholder="http://homeassistant.local:8095" />
     <button id="btn-save" title="Save MA URL">💾</button>
   </div>
+
+  <div class="provider-buttons" id="provider-buttons" style="display:none"></div>
+
+  <div class="tracklist" id="tracklist" style="display:none"></div>
 
   <button id="btn-open">Open in Music Assistant</button>
 
@@ -158,6 +204,11 @@
     "http://localhost:8095",
     "http://musicassistant.local:8095",
   ];
+
+  const PROVIDER_LABELS = {
+    spotify: "Spotify", tidal: "Tidal", qobuz: "Qobuz",
+    ytmusic: "YouTube Music", deezer: "Deezer", apple_music: "Apple Music",
+  };
 
   // --- decode payload from URL fragment ---
   let payload = null;
@@ -197,6 +248,33 @@
       const emojis = { track: "🎵", artist: "🎤", album: "💿", playlist: "📋" };
       document.getElementById("art-placeholder").textContent =
         emojis[payload.type] || "🎵";
+    }
+    // provider links
+    if (payload.links && Object.keys(payload.links).length) {
+      const container = document.getElementById("provider-buttons");
+      container.style.display = "flex";
+      for (const [domain, url] of Object.entries(payload.links)) {
+        const label = PROVIDER_LABELS[domain] || domain;
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.className = "provider-btn";
+        a.textContent = label;
+        container.appendChild(a);
+      }
+    }
+
+    // playlist track list
+    if (payload.type === "playlist" && payload.tracks?.length) {
+      const tl = document.getElementById("tracklist");
+      tl.style.display = "block";
+      payload.tracks.forEach((t, i) => {
+        const row = document.createElement("div");
+        row.className = "tracklist-item";
+        row.innerHTML = `<span class="t-num">${i + 1}.</span><span class="t-title">${t.title || "?"}</span><span class="t-artist">${t.artist || ""}</span>`;
+        tl.appendChild(row);
+      });
     }
   }
 
