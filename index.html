@@ -137,10 +137,11 @@
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      gap: .35rem;
-      transition: background .15s;
+      gap: .4rem;
+      transition: background .15s, border-color .15s;
     }
-    .provider-btn:hover { background: #333; }
+    .provider-btn:hover { opacity: .85; }
+    .provider-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 
     .tracklist {
       margin-bottom: 1rem;
@@ -209,6 +210,19 @@
     spotify: "Spotify", tidal: "Tidal", qobuz: "Qobuz",
     ytmusic: "YouTube Music", deezer: "Deezer", apple_music: "Apple Music",
   };
+  const PROVIDER_COLORS = {
+    spotify: "#1DB954", tidal: "#00FFFF", qobuz: "#00B4B4",
+    ytmusic: "#FF0000", deezer: "#A238FF", apple_music: "#FA2D48",
+  };
+  // Minimal inline SVG icons per provider
+  const PROVIDER_ICONS = {
+    spotify: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>`,
+    tidal: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.012 3.992L8.008 7.996 4.004 3.992 0 7.996l4.004 4.004 4.004-4.004 4.004 4.004 4.004-4.004zM8.008 16.004l4.004-4.004 4.004 4.004L20.02 12l-4.004-4.004-4.004 4.004-4.004-4.004L4.004 12z"/></svg>`,
+    ytmusic: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.376 0 0 5.376 0 12s5.376 12 12 12 12-5.376 12-12S18.624 0 12 0zm0 19.104c-3.924 0-7.104-3.18-7.104-7.104S8.076 4.896 12 4.896s7.104 3.18 7.104 7.104-3.18 7.104-7.104 7.104zm0-13.332c-3.432 0-6.228 2.796-6.228 6.228S8.568 18.228 12 18.228s6.228-2.796 6.228-6.228S15.432 5.772 12 5.772zM9.684 15.54V8.46L15.816 12l-6.132 3.54z"/></svg>`,
+    deezer: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.81 11.32h3.381v1.504H18.81zm0 2.604h3.381v1.505H18.81zm0-5.206h3.381v1.505H18.81zM0 16.43h3.381v1.505H0zm4.702 0h3.382v1.505H4.702zm4.703 0h3.382v1.505H9.405zm4.702 0h3.382v1.505h-3.382zm4.703 0h3.381v1.505H18.81zM0 13.924h3.381v1.505H0zm4.702 0h3.382v1.505H4.702zm4.703 0h3.382v1.505H9.405zm4.702 0h3.382v1.505h-3.382zm-9.405-2.604h3.382v1.504H4.702zm4.703 0h3.382v1.504H9.405zm4.702 0h3.382v1.504h-3.382zM9.405 8.718h3.382v1.504H9.405zm4.702 0h3.382v1.504h-3.382zM14.107 6.114h3.382v1.504h-3.382z"/></svg>`,
+    apple_music: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.994 6.124a9.23 9.23 0 00-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 00-1.877-.726 10.496 10.496 0 00-1.split-.204c-.667-.073-5.456-.104-5.456-.104S7.044 0 6.26.017C5.77.026 5.29.05 4.81.09c-.37.03-.738.065-1.098.152a5.01 5.01 0 00-1.878.72C.72 1.629-.027 2.632-.001 3.944c.01.585.04 1.172.08 1.756.062.93.196 1.85.417 2.754.252 1.02.693 1.963 1.394 2.748.62.696 1.39 1.204 2.262 1.536.625.236 1.277.37 1.935.45.406.05.813.073 1.22.098l5.397.085 5.387-.089c.409-.03.816-.054 1.222-.106.663-.083 1.317-.222 1.942-.46.875-.334 1.644-.843 2.264-1.543.697-.783 1.134-1.726 1.385-2.745.22-.9.35-1.82.41-2.747.044-.591.074-1.183.083-1.773C24 6.437 24 6.124 23.994 6.124zm-8.01 8.367v-5.25l-4.5 5.25V9.373h1.498v5.24l4.5-5.24v5.118H15.984z"/></svg>`,
+    qobuz: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><text x="12" y="16" text-anchor="middle" fill="#0f0f0f" font-size="10" font-weight="bold">Q</text></svg>`,
+  };
 
   // --- decode payload from URL fragment ---
   let payload = null;
@@ -249,19 +263,12 @@
       document.getElementById("art-placeholder").textContent =
         emojis[payload.type] || "🎵";
     }
-    // provider links
+    // provider links from payload
     if (payload.links && Object.keys(payload.links).length) {
       const container = document.getElementById("provider-buttons");
       container.style.display = "flex";
       for (const [domain, url] of Object.entries(payload.links)) {
-        const label = PROVIDER_LABELS[domain] || domain;
-        const a = document.createElement("a");
-        a.href = url;
-        a.target = "_blank";
-        a.rel = "noopener";
-        a.className = "provider-btn";
-        a.textContent = label;
-        container.appendChild(a);
+        addProviderButton(container, domain, url);
       }
     }
 
@@ -276,6 +283,22 @@
         tl.appendChild(row);
       });
     }
+  }
+
+  function addProviderButton(container, domain, url) {
+    const label = PROVIDER_LABELS[domain] || domain;
+    const color = PROVIDER_COLORS[domain] || "#888";
+    const icon = PROVIDER_ICONS[domain] || "";
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.className = "provider-btn";
+    a.style.borderColor = color + "66";
+    a.style.color = color;
+    a.innerHTML = icon + label;
+    container.appendChild(a);
+    container.style.display = "flex";
   }
 
   // --- restore saved MA URL ---
