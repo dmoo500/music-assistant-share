@@ -20,9 +20,29 @@ pnpm build
 pnpm preview
 ```
 
+## How It Works
+
+1. **Decode**: Share link payload is decoded from base64url JSON
+2. **Display**: Show track/artist/playlist preview with metadata and provider links
+3. **Open**: When clicking "Open in Music Assistant":
+   - **Primary**: POST to `/api/share/resolve` on your MA instance
+     - Server-side resolution via Share Plugin
+     - External ID lookup → search fallback
+     - Returns resolved MA item
+     - Navigate directly to item detail page
+   - **Fallback**: If Share Plugin unavailable (older MA versions)
+     - Navigate to search page with ISRC/MBID or title query
+     - Manual selection of correct result
+
+**Benefits of server-side resolution:**
+- ✅ External ID API for precise, fast lookups (PR #5110)
+- ✅ Automatic fallback to search when needed
+- ✅ Playlist support (resolves all tracks and creates library playlist)
+- ✅ No client-side provider API calls
+
 ## Architecture
 
-- **No WebSocket**: Static share link handler without live server connection
+- **Server-first Resolution**: Calls MA Share Plugin HTTP endpoint for smart resolution
 - **Vue 3 Composition API**: Modern reactive components with TypeScript
 - **Vite**: Fast dev server and optimized production builds
 - **TailwindCSS**: Utility-first styling matching MA design system
@@ -117,14 +137,27 @@ This means:
 
 ### Resolution Strategy
 
-When opening a share link in your Music Assistant instance:
+The **Music Assistant Share Plugin** on the server resolves share links intelligently:
 
-1. **Tracks with ISRC**: Search using `isrc:{code}` pattern across all providers
-2. **Artists with MBID**: Search using `mbid:{id}` pattern
-3. **Fallback**: If no external ID available, search by title (+ artist if present)
-4. **Playlists**: Server plugin resolves each track individually and creates new library playlist
+1. **Primary: External ID Lookup** (when available)
+   - Tracks: Try ISRC via dedicated external ID API (PR #5110)
+   - Artists: Try MusicBrainz ID via external ID API
+   - Precise, fast, and provider-agnostic
 
-**Note**: External ID lookup will be enhanced with dedicated API endpoints (PR #5110).
+2. **Fallback: Search**
+   - If external ID lookup fails or returns no results
+   - Tracks: Search `isrc:{code}` or `{artist} {title}`
+   - Artists: Search by name
+   - Ensures compatibility even without external IDs
+
+3. **Playlists**
+   - Resolve each track individually (ISRC → title search)
+   - Create new library playlist with matched tracks
+
+**Benefits:**
+- ✅ Best-effort resolution: tries precise lookup first, falls back to fuzzy search
+- ✅ Works even when external IDs missing or providers don't support them
+- ✅ Server-side: no client-side API calls needed
 
 ### Creating Share Links
 

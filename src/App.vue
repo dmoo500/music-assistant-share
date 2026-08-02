@@ -42,7 +42,7 @@ function saveUrl(): void {
   error.value = "";
 }
 
-function openInMusicAssistant(): void {
+async function openInMusicAssistant(): Promise<void> {
   if (!maUrl.value.trim()) {
     error.value = "Please enter the URL of your Music Assistant instance.";
     return;
@@ -55,17 +55,40 @@ function openInMusicAssistant(): void {
 
   try {
     const url = new URL(maUrl.value);
+    const raw = location.hash.slice(1);
     
-    // Build search query based on media type and available identifiers
+    // Try server-side resolution via Share Plugin HTTP endpoint
+    // This uses External ID lookup + search fallback on the server
+    const apiUrl = `${url.origin}/api/share/resolve`;
+    
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ encoded: raw }),
+      });
+
+      if (response.ok) {
+        const item = await response.json();
+        // Navigate to resolved item
+        url.hash = `/item/${item.uri}`;
+        window.open(url.toString(), "_blank");
+        error.value = "";
+        return;
+      }
+    } catch (e) {
+      console.warn("Share plugin not available, falling back to search:", e);
+    }
+
+    // Fallback: Navigate to search
+    // (for instances without Share Plugin or when resolution fails)
     let searchQuery = "";
     
     switch (payload.value.type) {
       case "track":
         if (payload.value.isrc) {
-          // Use ISRC for precise lookup
           searchQuery = `isrc:${payload.value.isrc}`;
         } else if (payload.value.title) {
-          // Fallback to title search
           searchQuery = payload.value.artist 
             ? `${payload.value.artist} ${payload.value.title}`
             : payload.value.title;
@@ -77,10 +100,8 @@ function openInMusicAssistant(): void {
         
       case "artist":
         if (payload.value.mbid) {
-          // Use MusicBrainz ID for precise lookup
           searchQuery = `mbid:${payload.value.mbid}`;
         } else if (payload.value.title) {
-          // Fallback to title search
           searchQuery = payload.value.title;
         } else {
           error.value = "No artist information available.";
@@ -89,12 +110,10 @@ function openInMusicAssistant(): void {
         break;
         
       case "playlist":
-        // Playlists will be resolved by the server plugin
-        error.value = "Playlist resolution must be handled by the server plugin.";
+        error.value = "Playlist resolution requires the Share Plugin on the server.";
         return;
     }
     
-    // Navigate to search page
     url.hash = `/search?q=${encodeURIComponent(searchQuery)}`;
     window.open(url.toString(), "_blank");
     error.value = "";
