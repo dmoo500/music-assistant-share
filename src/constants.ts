@@ -38,6 +38,5 @@ export const PROVIDER_ICONS: Record<ProviderDomain, string> = {
 export const MEDIA_TYPE_EMOJI = {
   track: "🎵",
   artist: "🎤",
-  album: "💿",
   playlist: "📋",
 };

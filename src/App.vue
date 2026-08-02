@@ -48,14 +48,54 @@ function openInMusicAssistant(): void {
     return;
   }
 
-  if (!payload.value?.uri) {
-    error.value = "No media URI found in share link.";
+  if (!payload.value) {
+    error.value = "No share data found.";
     return;
   }
 
   try {
     const url = new URL(maUrl.value);
-    url.hash = `/item/${payload.value.uri}`;
+    
+    // Build search query based on media type and available identifiers
+    let searchQuery = "";
+    
+    switch (payload.value.type) {
+      case "track":
+        if (payload.value.isrc) {
+          // Use ISRC for precise lookup
+          searchQuery = `isrc:${payload.value.isrc}`;
+        } else if (payload.value.title) {
+          // Fallback to title search
+          searchQuery = payload.value.artist 
+            ? `${payload.value.artist} ${payload.value.title}`
+            : payload.value.title;
+        } else {
+          error.value = "No track information available.";
+          return;
+        }
+        break;
+        
+      case "artist":
+        if (payload.value.mbid) {
+          // Use MusicBrainz ID for precise lookup
+          searchQuery = `mbid:${payload.value.mbid}`;
+        } else if (payload.value.title) {
+          // Fallback to title search
+          searchQuery = payload.value.title;
+        } else {
+          error.value = "No artist information available.";
+          return;
+        }
+        break;
+        
+      case "playlist":
+        // Playlists will be resolved by the server plugin
+        error.value = "Playlist resolution must be handled by the server plugin.";
+        return;
+    }
+    
+    // Navigate to search page
+    url.hash = `/search?q=${encodeURIComponent(searchQuery)}`;
     window.open(url.toString(), "_blank");
     error.value = "";
   } catch (e) {
