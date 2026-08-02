@@ -4,6 +4,28 @@ Music Assistant share link handler - open shared tracks, albums, artists and pla
 
 Built with **Vue 3 + Vite + TypeScript + TailwindCSS** to match the Music Assistant frontend tech stack.
 
+## Demo
+
+Try this example share link (Volbeat - A Better Believer):
+```
+http://localhost:3100/#eyJ2IjoxLCJ0eXBlIjoidHJhY2siLCJ0aXRsZSI6IkEgQmV0dGVyIEJlbGlldmVyIiwiYXJ0aXN0IjoiVm9sYmVhdCIsImlzcmMiOiJES05FMTEwMDAxMDgiLCJhcnQiOiJodHRwczovL2lzMS1zc2wubXpzdGF0aWMuY29tL2ltYWdlL3RodW1iL011c2ljMTI0L3Y0LzE5LzZhLzY4LzE5NmE2OGFiLWU1ZWUtNWYwOC00OGM5LTdlZTI5MDk1NThhOC8wMDYwMjUyNzUwNDM4NC5yZ2IuanBnLzEwMDB4MTAwMGJiLmpwZyIsImxpbmtzIjp7ImFwcGxlX211c2ljIjoiaHR0cHM6Ly9tdXNpYy5hcHBsZS5jb20vZGUvYWxidW0vYS1iZXR0ZXItYmVsaWV2ZXIvMTQ0MDczODMzNT9pPTE0NDA3Mzg0NDEifX0=
+```
+
+Decodes to:
+```json
+{
+  "v": 1,
+  "type": "track",
+  "title": "A Better Believer",
+  "artist": "Volbeat",
+  "isrc": "DKNE11000108",
+  "art": "https://is1-ssl.mzstatic.com/...",
+  "links": {
+    "apple_music": "https://music.apple.com/de/album/a-better-believer/1440738335?i=1440738441"
+  }
+}
+```
+
 ## Development
 
 ```bash
