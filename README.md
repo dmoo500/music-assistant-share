@@ -48,6 +48,7 @@ pnpm preview
 - **TailwindCSS**: Utility-first styling matching MA design system
 - **VueUse**: Composables for local storage and utilities
 - **Auto Dark Mode**: Automatically follows system theme preference via `prefers-color-scheme`
+- **Provider Icons**: Official SVG icons from Music Assistant provider manifests (in `public/provider-icons/`)
 
 ## Project Structure
 

@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import type { ProviderDomain } from "@/types";
-import { PROVIDER_LABELS, PROVIDER_COLORS, PROVIDER_ICONS } from "@/constants";
+import { PROVIDER_LABELS, PROVIDER_COLORS } from "@/constants";
 
 defineProps<{
   links: Record<ProviderDomain, string>;
 }>();
+
+function getProviderIconUrl(domain: ProviderDomain): string {
+  return `/provider-icons/${domain}.svg`;
+}
 </script>
 
 <template>
@@ -21,7 +25,11 @@ defineProps<{
         color: PROVIDER_COLORS[domain as ProviderDomain],
       }"
     >
-      <span v-html="PROVIDER_ICONS[domain as ProviderDomain]"></span>
+      <img 
+        :src="getProviderIconUrl(domain as ProviderDomain)" 
+        :alt="PROVIDER_LABELS[domain as ProviderDomain]"
+        class="provider-icon"
+      />
       {{ PROVIDER_LABELS[domain as ProviderDomain] || domain }}
     </a>
   </div>
@@ -54,7 +62,7 @@ defineProps<{
   opacity: 0.85;
 }
 
-.provider-btn :deep(svg) {
+.provider-icon {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
