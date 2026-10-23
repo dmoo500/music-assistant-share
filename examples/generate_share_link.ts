@@ -1,12 +1,6 @@
 export type MediaType = "track" | "album" | "artist" | "playlist";
 
-export type ProviderDomain =
-  | "spotify"
-  | "tidal"
-  | "qobuz"
-  | "ytmusic"
-  | "deezer"
-  | "apple_music";
+export type ProviderDomain = "spotify" | "tidal" | "qobuz" | "ytmusic" | "deezer" | "apple_music";
 
 export interface PlaylistTrack {
   title: string;
@@ -15,11 +9,11 @@ export interface PlaylistTrack {
   isrc?: string;
   mbid?: string;
   mb_track?: string;
+  duration?: number;
   provider_refs?: Partial<Record<ProviderDomain, string>>;
 }
 
 export interface SharePayload {
-  v: 2;
   type: MediaType;
   title: string;
   artist?: string;
@@ -35,24 +29,20 @@ export interface SharePayload {
 
 export function createShareLink(
   payload: SharePayload,
-  baseUrl = "https://share.music-assistant.io",
+  baseUrl = "https://share.music-assistant.io"
 ): string {
-  if (payload.v !== 2 || !payload.title.trim()) {
-    throw new Error("Payload must be a complete v2 share payload");
+  if (!payload.title.trim()) {
+    throw new Error("Payload must include a title");
   }
 
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  const encoded = btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  const encoded = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   return `${baseUrl}/#${encoded}`;
 }
 
 const example: SharePayload = {
-  v: 2,
   type: "track",
   title: "A Better Believer",
   artist: "Volbeat",

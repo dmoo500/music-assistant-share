@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { PROVIDER_LABELS } from "@/constants";
-import {
-  createMusicAssistantUrl,
-  encodeSharePayload,
-  expandProviderRefs,
-} from "@/helpers/share";
+import { createMusicAssistantUrl, encodeSharePayload, expandProviderRefs } from "@/helpers/share";
 import type { PlaylistTrack, ProviderDomain } from "@/types";
 
 const props = defineProps<{
@@ -13,16 +9,14 @@ const props = defineProps<{
 }>();
 
 function safeTrackLinks(track: PlaylistTrack): [ProviderDomain, string][] {
-  return Object.entries(expandProviderRefs(track.provider_refs) ?? {}).flatMap(
-    ([domain, url]) =>
-      domain in PROVIDER_LABELS ? [[domain as ProviderDomain, url]] : [],
+  return Object.entries(expandProviderRefs(track.provider_refs) ?? {}).flatMap(([domain, url]) =>
+    domain in PROVIDER_LABELS ? [[domain as ProviderDomain, url]] : []
   );
 }
 
 function musicAssistantTrackUrl(track: PlaylistTrack): string | undefined {
   try {
     const payload = {
-      v: 2 as const,
       type: "track" as const,
       title: track.title,
       artist: track.artist,
@@ -32,10 +26,7 @@ function musicAssistantTrackUrl(track: PlaylistTrack): string | undefined {
       mb_track: track.mb_track,
       provider_refs: track.provider_refs,
     };
-    return createMusicAssistantUrl(
-      props.maUrl,
-      encodeSharePayload(payload),
-    );
+    return createMusicAssistantUrl(props.maUrl, encodeSharePayload(payload));
   } catch {
     return undefined;
   }
