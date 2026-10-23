@@ -28,12 +28,9 @@ Type-safe implementation with full TypeScript definitions. Can be used directly 
 
 ## Usage
 
-All implementations provide the same core functions:
-
-- `createShareLink(payload)` - Generic function with full payload control
-- `createTrackShareLink(uri, options)` - Helper for tracks
-- `createAlbumShareLink(uri, options)` - Helper for albums
-- `createArtistShareLink(uri, options)` - Helper for artists
-- `createPlaylistShareLink(uri, options)` - Helper for playlists
+All implementations provide `createShareLink(payload)`. The payload must use
+version 2 and include a media type and title. Provider links are relative
+`provider_refs`; artwork uses a compact `art_ref` host code and path. Full URLs,
+Music Assistant item URIs and version 1 payloads are not part of the wire format.
 
 See the individual files for detailed examples and documentation.

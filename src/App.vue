@@ -1,11 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useStorage } from "@vueuse/core";
+import { Save } from "@lucide/vue";
 import type { SharePayload } from "@/types";
-import { STORAGE_KEY, COMMON_URLS } from "@/constants";
+import {
+  DEFAULT_INSTANCE_URL,
+  LEGACY_DEFAULT_INSTANCE_URL,
+  STORAGE_KEY,
+} from "@/constants";
 import MediaPreview from "@/components/MediaPreview.vue";
 import ProviderLinks from "@/components/ProviderLinks.vue";
 import TrackList from "@/components/TrackList.vue";
+import {
+  createMusicAssistantUrl,
+  expandArtworkRef,
+  expandProviderRefs,
+  parseInstanceUrl,
+  sanitizeProviderRefs,
+} from "@/helpers/share";
 
 const payload = ref<SharePayload | null>(null);
 const maUrl = useStorage(STORAGE_KEY, "");
@@ -16,7 +28,17 @@ const pageTitle = computed(() => {
   return `${payload.value.title} – Music Assistant`;
 });
 
+watch(
+  pageTitle,
+  (title) => {
+    document.title = title;
+  },
+  { immediate: true },
+);
+
 function decodePayload(): void {
+  payload.value = null;
+  error.value = "";
   try {
     const raw = location.hash.slice(1);
     if (!raw) {
@@ -27,151 +49,107 @@ function decodePayload(): void {
     const b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     const decoded = new TextDecoder().decode(bytes);
-    payload.value = JSON.parse(decoded);
-  } catch (e) {
+    const value: unknown = JSON.parse(decoded);
+    if (!value || typeof value !== "object") throw new Error("Invalid payload");
+    const candidate = value as Record<string, unknown>;
+    if (
+      candidate.v !== 2 ||
+      !["track", "album", "artist", "playlist"].includes(String(candidate.type)) ||
+      typeof candidate.title !== "string" ||
+      !candidate.title.trim()
+    ) {
+      throw new Error("Invalid payload");
+    }
+    if (
+      candidate.type === "playlist" &&
+      (!Array.isArray(candidate.tracks) ||
+        candidate.tracks.some((track) => !track || typeof track.title !== "string"))
+    ) {
+      throw new Error("Invalid playlist payload");
+    }
+    const decodedPayload = candidate as unknown as SharePayload;
+    payload.value = {
+      ...decodedPayload,
+      art_ref:
+        typeof candidate.art_ref === "string" &&
+        expandArtworkRef(candidate.art_ref)
+          ? candidate.art_ref
+          : undefined,
+      provider_refs: sanitizeProviderRefs(candidate.provider_refs),
+      tracks: decodedPayload.tracks?.map((track) => ({
+        ...track,
+        provider_refs: sanitizeProviderRefs(track.provider_refs),
+      })),
+    };
+  } catch {
     error.value = "Could not decode share link. It may be corrupted.";
-    console.error("Decode error:", e);
   }
 }
 
 function saveUrl(): void {
-  if (!maUrl.value.trim()) {
-    error.value = "Please enter a valid URL.";
-    return;
+  try {
+    validateInstanceUrl(maUrl.value);
+    error.value = "";
+  } catch {
+    error.value = "Please enter a valid HTTP or HTTPS URL.";
   }
-  error.value = "";
 }
 
-async function openInMusicAssistant(): Promise<void> {
-  if (!maUrl.value.trim()) {
-    error.value = "Please enter the URL of your Music Assistant instance.";
-    return;
-  }
+function validateInstanceUrl(value: string): URL {
+  return parseInstanceUrl(value);
+}
 
+function openInMusicAssistant(): void {
   if (!payload.value) {
     error.value = "No share data found.";
     return;
   }
-
   try {
-    const url = new URL(maUrl.value);
     const raw = location.hash.slice(1);
-    
-    // Try server-side resolution via Share Plugin HTTP endpoint
-    // This uses External ID lookup + search fallback on the server
-    const apiUrl = `${url.origin}/api/share/resolve`;
-    
-    try {
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ encoded: raw }),
-      });
-
-      if (response.ok) {
-        const item = await response.json();
-        // Navigate to resolved item
-        url.hash = `/item/${item.uri}`;
-        window.open(url.toString(), "_blank");
-        error.value = "";
-        return;
-      }
-    } catch (e) {
-      console.warn("Share plugin not available, falling back to search:", e);
-    }
-
-    // Fallback: Navigate to search
-    // (for instances without Share Plugin or when resolution fails)
-    let searchQuery = "";
-    
-    switch (payload.value.type) {
-      case "track":
-        if (payload.value.isrc) {
-          searchQuery = `isrc:${payload.value.isrc}`;
-        } else if (payload.value.title) {
-          searchQuery = payload.value.artist 
-            ? `${payload.value.artist} ${payload.value.title}`
-            : payload.value.title;
-        } else {
-          error.value = "No track information available.";
-          return;
-        }
-        break;
-        
-      case "artist":
-        if (payload.value.mbid) {
-          searchQuery = `mbid:${payload.value.mbid}`;
-        } else if (payload.value.title) {
-          searchQuery = payload.value.title;
-        } else {
-          error.value = "No artist information available.";
-          return;
-        }
-        break;
-        
-      case "playlist":
-        error.value = "Playlist resolution requires the Share Plugin on the server.";
-        return;
-    }
-    
-    url.hash = `/search?q=${encodeURIComponent(searchQuery)}`;
-    window.open(url.toString(), "_blank");
+    const url = createMusicAssistantUrl(maUrl.value, raw);
+    window.open(url, "_blank", "noopener,noreferrer");
     error.value = "";
-  } catch (e) {
-    error.value = "Invalid Music Assistant URL.";
-    console.error("URL error:", e);
+  } catch {
+    error.value = "Please enter a valid HTTP or HTTPS URL.";
   }
 }
 
 onMounted(() => {
   decodePayload();
-  document.title = pageTitle.value;
+  window.addEventListener("hashchange", decodePayload);
 
   // Auto-fill URL if empty
-  if (!maUrl.value && COMMON_URLS.length) {
-    maUrl.value = COMMON_URLS[0];
+  if (!maUrl.value || maUrl.value === LEGACY_DEFAULT_INSTANCE_URL) {
+    maUrl.value = DEFAULT_INSTANCE_URL;
   }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("hashchange", decodePayload);
 });
 </script>
 
 <template>
   <div class="card">
-    <!-- Logo & Branding -->
-    <div class="logo">
-      <svg
-        viewBox="0 0 240 240"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        class="logo-icon"
-      >
-        <path
-          d="m 109.394,4.3814 c 5.848,-5.84187 15.394,-5.84187 21.212,0 l 98.788,98.8876 c 5.848,5.842 10.606,17.374 10.606,25.638 v 90.11 l -0.005,0.356 c -0.206,8.086 -6.881,14.628 -14.995,14.628 H 15 C 6.75759,234.001 2.40473e-5,227.22 0,218.987 v -90.11 c 1.20331e-4,-8.264 4.78834,-19.796 10.6064,-25.638 z"
-          fill="#f2f4f9"
-        />
-        <path
-          d="m 109.394,4.3814 c 5.848,-5.84187 15.394,-5.84187 21.212,0 l 98.788,98.8876 c 5.848,5.842 10.606,17.374 10.606,25.638 v 90.11 l -0.005,0.356 c -0.206,8.086 -6.881,14.628 -14.995,14.628 H 15 C 6.75759,234.001 2.40473e-5,227.22 0,218.987 v -90.11 c 1.20331e-4,-8.264 4.78834,-19.796 10.6064,-25.638 z M 36,120.001 c -4.4183,0 -8,3.581 -8,8 v 78 h 16 v -78 c 0,-4.419 -3.5817,-8 -8,-8 z m 32,0 c -4.4183,0 -8,3.581 -8,8 v 78 h 16 v -78 c 0,-4.419 -3.5817,-8 -8,-8 z m 32,0 c -4.4183,0 -8,3.581 -8,8 v 78 h 16 v -78 c 0,-4.419 -3.582,-8 -8,-8 z m 58.393,0.426 c -4.193,-1.395 -8.722,0.873 -10.118,5.065 l -26.796,80.509 h 16.863 l 25.114,-75.457 c 1.395,-4.192 -0.872,-8.721 -5.063,-10.117 z m 30.315,5.065 c -1.395,-4.192 -5.925,-6.46 -10.117,-5.065 -4.192,1.396 -6.46,5.925 -5.065,10.117 l 25.116,75.457 h 16.862 z"
-          fill="#18bcf2"
-        />
-      </svg>
-      <a
-        href="https://music-assistant.io"
-        target="_blank"
-        rel="noopener"
-        class="logo-link"
-      >
-        Music Assistant
-      </a>
-    </div>
-
-    <!-- Media Preview -->
     <MediaPreview :payload="payload" />
+
+    <ProviderLinks
+      v-if="payload?.provider_refs"
+      :links="expandProviderRefs(payload.provider_refs) ?? {}"
+    />
+
+    <TrackList
+      v-if="payload?.type === 'playlist' && payload.tracks"
+      :tracks="payload.tracks"
+      :ma-url="maUrl"
+    />
 
     <!-- MA Instance URL Input -->
     <div class="url-row">
       <input
         v-model.trim="maUrl"
         type="url"
-        placeholder="http://homeassistant.local:8095"
+        placeholder="http://musicassistant.local:8095"
         class="url-input"
         @keyup.enter="openInMusicAssistant"
       />
@@ -181,18 +159,9 @@ onMounted(() => {
         title="Save MA URL"
         aria-label="Save Music Assistant URL"
       >
-        💾
+        <Save :size="18" aria-hidden="true" />
       </button>
     </div>
-
-    <!-- Provider Links -->
-    <ProviderLinks v-if="payload?.links" :links="payload.links" />
-
-    <!-- Track List (for playlists) -->
-    <TrackList
-      v-if="payload?.type === 'playlist' && payload.tracks"
-      :tracks="payload.tracks"
-    />
 
     <!-- Open Button -->
     <button @click="openInMusicAssistant" class="btn-open">
@@ -215,30 +184,11 @@ onMounted(() => {
 <style scoped>
 .card {
   background: var(--color-bg-secondary);
-  border-radius: 16px;
-  padding: 2rem;
-  max-width: 420px;
+  border-radius: 12px;
+  padding: 1rem;
+  max-width: 560px;
   width: 100%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  font-size: 0.85rem;
-  color: var(--color-text-tertiary);
-}
-
-.logo-icon {
-  width: 24px;
-  height: 24px;
-}
-
-.logo-link {
-  color: inherit;
-  text-decoration: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
 }
 
 .url-row {
@@ -285,10 +235,13 @@ button:hover {
 }
 
 .btn-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 42px;
   background: var(--color-bg-tertiary);
   color: var(--color-text-primary);
-  padding: 0.6rem 0.9rem;
-  font-size: 0.85rem;
+  padding: 0;
 }
 
 .hint {

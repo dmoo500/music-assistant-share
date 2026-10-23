@@ -1,70 +1,137 @@
 <script setup lang="ts">
 import type { ProviderDomain } from "@/types";
-import { PROVIDER_LABELS, PROVIDER_COLORS } from "@/constants";
+import { PROVIDER_LABELS } from "@/constants";
+import { safeProviderUrl } from "@/helpers/share";
+import { computed, ref } from "vue";
+import { Copy } from "@lucide/vue";
 
-defineProps<{
-  links: Record<ProviderDomain, string>;
+const props = defineProps<{
+  links: Partial<Record<ProviderDomain, string>>;
 }>();
+const copiedDomain = ref<ProviderDomain>();
+
+const safeLinks = computed(() =>
+  Object.entries(props.links).flatMap(([domain, value]) => {
+    const url = safeProviderUrl(domain, value);
+    return url && domain in PROVIDER_LABELS
+      ? [[domain as ProviderDomain, url] as const]
+      : [];
+  }),
+);
 
 function getProviderIconUrl(domain: ProviderDomain): string {
   return `/provider-icons/${domain}.svg`;
 }
+
+async function copyLink(domain: ProviderDomain, url: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(url);
+    copiedDomain.value = domain;
+  } catch {
+    copiedDomain.value = undefined;
+  }
+}
 </script>
 
 <template>
-  <div v-if="Object.keys(links).length" class="provider-buttons">
-    <a
-      v-for="[domain, url] in Object.entries(links)"
-      :key="domain"
-      :href="url"
-      target="_blank"
-      rel="noopener"
-      class="provider-btn"
-      :style="{
-        borderColor: PROVIDER_COLORS[domain as ProviderDomain] + '66',
-        color: PROVIDER_COLORS[domain as ProviderDomain],
-      }"
-    >
-      <img 
-        :src="getProviderIconUrl(domain as ProviderDomain)" 
-        :alt="PROVIDER_LABELS[domain as ProviderDomain]"
+  <div v-if="safeLinks.length" class="provider-list">
+    <div v-for="[domain, url] in safeLinks" :key="domain" class="provider-row">
+      <img
+        :src="getProviderIconUrl(domain)"
+        :alt="PROVIDER_LABELS[domain]"
         class="provider-icon"
       />
-      {{ PROVIDER_LABELS[domain as ProviderDomain] || domain }}
-    </a>
+      <div class="provider-info">
+        <span class="provider-name">{{ PROVIDER_LABELS[domain] }}</span>
+        <a
+          :href="url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="provider-url"
+        >
+          {{ url }}
+        </a>
+      </div>
+      <button
+        type="button"
+        class="copy-button"
+        :aria-label="
+          copiedDomain === domain
+            ? `${PROVIDER_LABELS[domain]} link copied`
+            : `Copy ${PROVIDER_LABELS[domain]} link`
+        "
+        :title="copiedDomain === domain ? 'Copied' : 'Copy link'"
+        @click="copyLink(domain, url)"
+      >
+        <Copy :size="16" aria-hidden="true" />
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.provider-buttons {
+.provider-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  flex-direction: column;
+  margin: 0.9rem 0;
 }
 
-.provider-btn {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 0.5rem 0.9rem;
-  text-decoration: none;
-  display: inline-flex;
+.provider-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.4rem;
-  transition: opacity 0.15s;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.provider-btn:hover {
-  opacity: 0.85;
+.provider-row:first-child {
+  border-top: 1px solid var(--color-border);
 }
 
 .provider-icon {
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
+}
+
+.provider-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.provider-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.provider-url {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.copy-button:hover {
+  background: var(--color-bg-tertiary);
 }
 </style>
