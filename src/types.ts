@@ -1,4 +1,4 @@
-export type MediaType = "track" | "artist" | "playlist";
+export type MediaType = "track" | "album" | "artist" | "playlist";
 
 export type ProviderDomain =
   | "spotify"
@@ -12,11 +12,14 @@ export interface PlaylistTrack {
   title: string;
   artist?: string;
   isrc?: string;
+  mbid?: string;
+  mb_track?: string;
+  album?: string;
+  provider_refs?: Partial<Record<ProviderDomain, string>>;
 }
 
 export interface SharePayload {
-  /** Format version */
-  v: number;
+  v: 2;
   
   /** Media type */
   type: MediaType;
@@ -27,14 +30,15 @@ export interface SharePayload {
   /** Display metadata */
   artist?: string;
   album?: string;
-  art?: string;
+  art_ref?: string;
   
   /** External IDs (provider-agnostic identifiers) */
   isrc?: string;  // For tracks (International Standard Recording Code)
   mbid?: string;  // For artists (MusicBrainz ID)
+  mb_track?: string;
+  barcode?: string;
   
-  /** Provider quick links (optional, enriched by server) */
-  links?: Record<ProviderDomain, string>;
+  provider_refs?: Partial<Record<ProviderDomain, string>>;
   
   /** Playlist tracks (only for type: "playlist") */
   tracks?: PlaylistTrack[];

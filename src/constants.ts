@@ -1,11 +1,13 @@
 import type { ProviderDomain } from "./types";
 
 export const STORAGE_KEY = "ma_instance_url";
+export const DEFAULT_INSTANCE_URL = "http://musicassistant.local:8095";
+export const LEGACY_DEFAULT_INSTANCE_URL = "http://homeassistant.local:8095";
 
 export const COMMON_URLS = [
-  "http://homeassistant.local:8095",
+  DEFAULT_INSTANCE_URL,
   "http://localhost:8095",
-  "http://musicassistant.local:8095",
+  LEGACY_DEFAULT_INSTANCE_URL,
 ];
 
 export const PROVIDER_LABELS: Record<ProviderDomain, string> = {
@@ -28,6 +30,7 @@ export const PROVIDER_COLORS: Record<ProviderDomain, string> = {
 
 export const MEDIA_TYPE_EMOJI = {
   track: "🎵",
+  album: "💿",
   artist: "🎤",
   playlist: "📋",
 };
