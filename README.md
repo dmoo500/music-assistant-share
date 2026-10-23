@@ -15,20 +15,19 @@ The development server runs at `http://localhost:3100`.
 
 ## Flow
 
-1. The server creates a v2 payload from a Music Assistant item.
+1. The server encodes a Music Assistant item's metadata as Base64url JSON in the URL fragment.
 2. The share page displays artwork, metadata, provider links and playlist tracks.
 3. The recipient opens the payload in their authenticated Music Assistant frontend.
 4. Playlist import happens only after an explicit confirmation and requires library write access.
 
 The landing page makes no unauthenticated requests to the recipient's server.
 
-## v2 Payload
+## Payload
 
-Only version 2 is supported. Provider URLs are not embedded in the hash: `provider_refs` stores a relative path and query, and the client restores the HTTPS host from a fixed provider allowlist. Artwork uses a short host code plus path.
+Provider URLs are not embedded in the hash: `provider_refs` stores a relative path and query, and the client restores the HTTPS host from a fixed provider allowlist. Artwork uses a short host code plus path.
 
 ```typescript
 interface SharePayload {
-  v: 2;
   type: "track" | "album" | "artist" | "playlist";
   title: string;
   artist?: string;
@@ -46,24 +45,18 @@ interface SharePayload {
     isrc?: string;
     mbid?: string;
     mb_track?: string;
+    duration?: number;
     provider_refs?: Partial<Record<ProviderDomain, string>>;
   }>;
 }
 
-type ProviderDomain =
-  | "spotify"
-  | "tidal"
-  | "qobuz"
-  | "ytmusic"
-  | "deezer"
-  | "apple_music";
+type ProviderDomain = "spotify" | "tidal" | "qobuz" | "ytmusic" | "deezer" | "apple_music";
 ```
 
 Example values:
 
 ```json
 {
-  "v": 2,
   "type": "track",
   "title": "A Better Believer",
   "artist": "Volbeat",

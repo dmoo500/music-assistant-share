@@ -1,4 +1,4 @@
-"""Generate Music Assistant v2 share links."""
+"""Generate Music Assistant share links."""
 
 from __future__ import annotations
 
@@ -14,11 +14,11 @@ class PlaylistTrack(TypedDict):
     isrc: NotRequired[str]
     mbid: NotRequired[str]
     mb_track: NotRequired[str]
+    duration: NotRequired[int]
     provider_refs: NotRequired[dict[str, str]]
 
 
 class SharePayload(TypedDict):
-    v: Literal[2]
     type: Literal["track", "album", "artist", "playlist"]
     title: str
     artist: NotRequired[str]
@@ -36,9 +36,9 @@ def create_share_link(
     payload: SharePayload,
     base_url: str = "https://share.music-assistant.io",
 ) -> str:
-    """Encode a v2 payload as a base64url share link."""
-    if payload["v"] != 2 or not payload["title"].strip():
-        raise ValueError("Payload must be a complete v2 share payload")
+    """Encode a JSON payload as a base64url share link."""
+    if not payload["title"].strip():
+        raise ValueError("Payload must include a title")
     compact_json = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
     encoded = urlsafe_b64encode(compact_json.encode("utf-8")).decode("ascii").rstrip("=")
     return f"{base_url}/#{encoded}"
@@ -46,7 +46,6 @@ def create_share_link(
 
 if __name__ == "__main__":
     track: SharePayload = {
-        "v": 2,
         "type": "track",
         "title": "A Better Believer",
         "artist": "Volbeat",

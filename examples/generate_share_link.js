@@ -1,17 +1,14 @@
 const SHARE_BASE_URL = "https://share.music-assistant.io";
 
 function encodePayload(payload) {
-  if (payload.v !== 2 || !payload.type || !payload.title) {
-    throw new Error("Payload must be a complete v2 share payload");
+  if (!payload.type || !payload.title) {
+    throw new Error("Payload must include a media type and title");
   }
 
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 export function createShareLink(payload, baseUrl = SHARE_BASE_URL) {
@@ -19,7 +16,6 @@ export function createShareLink(payload, baseUrl = SHARE_BASE_URL) {
 }
 
 const trackLink = createShareLink({
-  v: 2,
   type: "track",
   title: "A Better Believer",
   artist: "Volbeat",

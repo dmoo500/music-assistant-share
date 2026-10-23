@@ -3,11 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useStorage } from "@vueuse/core";
 import { Save } from "@lucide/vue";
 import type { SharePayload } from "@/types";
-import {
-  DEFAULT_INSTANCE_URL,
-  LEGACY_DEFAULT_INSTANCE_URL,
-  STORAGE_KEY,
-} from "@/constants";
+import { DEFAULT_INSTANCE_URL, LEGACY_DEFAULT_INSTANCE_URL, STORAGE_KEY } from "@/constants";
 import MediaPreview from "@/components/MediaPreview.vue";
 import ProviderLinks from "@/components/ProviderLinks.vue";
 import TrackList from "@/components/TrackList.vue";
@@ -33,7 +29,7 @@ watch(
   (title) => {
     document.title = title;
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 function decodePayload(): void {
@@ -53,7 +49,6 @@ function decodePayload(): void {
     if (!value || typeof value !== "object") throw new Error("Invalid payload");
     const candidate = value as Record<string, unknown>;
     if (
-      candidate.v !== 2 ||
       !["track", "album", "artist", "playlist"].includes(String(candidate.type)) ||
       typeof candidate.title !== "string" ||
       !candidate.title.trim()
@@ -71,8 +66,7 @@ function decodePayload(): void {
     payload.value = {
       ...decodedPayload,
       art_ref:
-        typeof candidate.art_ref === "string" &&
-        expandArtworkRef(candidate.art_ref)
+        typeof candidate.art_ref === "string" && expandArtworkRef(candidate.art_ref)
           ? candidate.art_ref
           : undefined,
       provider_refs: sanitizeProviderRefs(candidate.provider_refs),
@@ -164,9 +158,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Open Button -->
-    <button @click="openInMusicAssistant" class="btn-open">
-      Open in Music Assistant
-    </button>
+    <button @click="openInMusicAssistant" class="btn-open">Open in Music Assistant</button>
 
     <!-- Hint -->
     <p class="hint">

@@ -28,9 +28,9 @@ Type-safe implementation with full TypeScript definitions. Can be used directly 
 
 ## Usage
 
-All implementations provide `createShareLink(payload)`. The payload must use
-version 2 and include a media type and title. Provider links are relative
+All implementations provide `createShareLink(payload)`. The payload includes
+a media type and title and is encoded as Base64url JSON without a version field. Provider links are relative
 `provider_refs`; artwork uses a compact `art_ref` host code and path. Full URLs,
-Music Assistant item URIs and version 1 payloads are not part of the wire format.
+and Music Assistant item URIs are not part of the wire format.
 
 See the individual files for detailed examples and documentation.
