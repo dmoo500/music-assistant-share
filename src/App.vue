@@ -63,7 +63,7 @@ function decodePayload(): void {
           (track) =>
             !track ||
             typeof track.title !== "string" ||
-            (track.version !== undefined && typeof track.version !== "string"),
+            (track.version !== undefined && typeof track.version !== "string")
         ))
     ) {
       throw new Error("Invalid playlist payload");
