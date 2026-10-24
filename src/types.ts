@@ -5,6 +5,7 @@ export type ProviderDomain = "spotify" | "tidal" | "qobuz" | "ytmusic" | "deezer
 export interface PlaylistTrack {
   title: string;
   artist?: string;
+  version?: string;
   isrc?: string;
   mbid?: string;
   mb_track?: string;
@@ -22,6 +23,7 @@ export interface SharePayload {
 
   /** Display metadata */
   artist?: string;
+  version?: string;
   album?: string;
   art_ref?: string;
 

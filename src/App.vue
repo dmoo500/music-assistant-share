@@ -51,14 +51,20 @@ function decodePayload(): void {
     if (
       !["track", "album", "artist", "playlist"].includes(String(candidate.type)) ||
       typeof candidate.title !== "string" ||
-      !candidate.title.trim()
+      !candidate.title.trim() ||
+      (candidate.version !== undefined && typeof candidate.version !== "string")
     ) {
       throw new Error("Invalid payload");
     }
     if (
       candidate.type === "playlist" &&
       (!Array.isArray(candidate.tracks) ||
-        candidate.tracks.some((track) => !track || typeof track.title !== "string"))
+        candidate.tracks.some(
+          (track) =>
+            !track ||
+            typeof track.title !== "string" ||
+            (track.version !== undefined && typeof track.version !== "string"),
+        ))
     ) {
       throw new Error("Invalid playlist payload");
     }

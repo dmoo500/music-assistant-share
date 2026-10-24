@@ -20,6 +20,7 @@ function musicAssistantTrackUrl(track: PlaylistTrack): string | undefined {
       type: "track" as const,
       title: track.title,
       artist: track.artist,
+      version: track.version,
       album: track.album,
       isrc: track.isrc,
       mbid: track.mbid,
