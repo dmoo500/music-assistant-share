@@ -25,6 +25,7 @@ export interface SharePayload {
   artist?: string;
   version?: string;
   album?: string;
+  duration?: number;
   art_ref?: string;
 
   /** External IDs (provider-agnostic identifiers) */
