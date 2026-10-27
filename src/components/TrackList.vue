@@ -25,6 +25,7 @@ function musicAssistantTrackUrl(track: PlaylistTrack): string | undefined {
       isrc: track.isrc,
       mbid: track.mbid,
       mb_track: track.mb_track,
+      duration: track.duration,
       provider_refs: track.provider_refs,
     };
     return createMusicAssistantUrl(props.maUrl, encodeSharePayload(payload));
