@@ -31,6 +31,7 @@ interface SharePayload {
   type: "track" | "album" | "artist" | "playlist";
   title: string;
   artist?: string;
+  artists?: string[];
   duration?: number;
   album?: string;
   isrc?: string;
@@ -42,6 +43,7 @@ interface SharePayload {
   tracks?: Array<{
     title: string;
     artist?: string;
+    artists?: string[];
     album?: string;
     isrc?: string;
     mbid?: string;
