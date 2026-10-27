@@ -52,7 +52,12 @@ function decodePayload(): void {
       !["track", "album", "artist", "playlist"].includes(String(candidate.type)) ||
       typeof candidate.title !== "string" ||
       !candidate.title.trim() ||
-      (candidate.version !== undefined && typeof candidate.version !== "string")
+      (candidate.version !== undefined && typeof candidate.version !== "string") ||
+      (candidate.artists !== undefined &&
+        (!Array.isArray(candidate.artists) ||
+          candidate.artists.some(
+            (artist) => typeof artist !== "string" || !artist.trim(),
+          )))
     ) {
       throw new Error("Invalid payload");
     }
@@ -63,7 +68,13 @@ function decodePayload(): void {
           (track) =>
             !track ||
             typeof track.title !== "string" ||
-            (track.version !== undefined && typeof track.version !== "string")
+            (track.version !== undefined && typeof track.version !== "string") ||
+            (track.artists !== undefined &&
+              (!Array.isArray(track.artists) ||
+                track.artists.some(
+                  (artist: unknown) =>
+                    typeof artist !== "string" || !artist.trim(),
+                )))
         ))
     ) {
       throw new Error("Invalid playlist payload");
